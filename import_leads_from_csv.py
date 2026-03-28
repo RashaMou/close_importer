@@ -382,7 +382,10 @@ def parse_csv(
 
                 if not changed:
                     skipped.append(
-                        {"row": company, "reason": "exact duplicate of an earlier row"}
+                        {
+                            "row": f"Row {reader.line_num}",
+                            "reason": "exact duplicate of an earlier row",
+                        }
                     )
             else:
                 # Start a new lead. Store metadata alongside the API payload
