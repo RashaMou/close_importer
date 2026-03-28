@@ -57,7 +57,7 @@ After importing, the script groups all leads by their **US State** field. For ea
 
 The result is written to a CSV file, sorted alphabetically by state.
 
-You can optionally filter leads by their **founded date** before segmenting, so only leads founded within the date range you specify will appear in the report.
+You can optionally filter leads by their **founded date** before segmenting. Pass `--start`, `--end`, or both — only leads whose founded date falls within the bounds you specify will appear in the report.
 
 ---
 
@@ -90,13 +90,25 @@ python3 import_leads_from_csv.py --api-key YOUR_API_KEY --csv path/to/leads.csv 
 
 ### Filter by founded date
 
-Only include leads founded within a date range in the state report:
+You can pass `--start`, `--end`, or both to filter which leads appear in the state report. All dates must be in `DD.MM.YYYY` format.
+
+Only leads founded within a range:
 
 ```bash
 python3 import_leads_from_csv.py --api-key YOUR_API_KEY --csv path/to/leads.csv --really --start 01.01.2010 --end 31.12.2020
 ```
 
-Dates must be in `DD.MM.YYYY` format. Both `--start` and `--end` must be provided together.
+Only leads founded after a certain date (no upper bound):
+
+```bash
+python3 import_leads_from_csv.py --api-key YOUR_API_KEY --csv path/to/leads.csv --really --start 01.01.2010
+```
+
+Only leads founded before a certain date (no lower bound):
+
+```bash
+python3 import_leads_from_csv.py --api-key YOUR_API_KEY --csv path/to/leads.csv --really --end 31.12.2020
+```
 
 ### Change the report output path
 
