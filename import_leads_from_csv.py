@@ -305,7 +305,11 @@ def parse_csv(
                     )
 
             phones = []
-            for raw in split_values(row.get("Contact Phones", "")):
+            for raw in [
+                v.strip()
+                for v in re.split(r"[;,\n]+", row.get("Contact Phones", ""))
+                if v.strip()
+            ]:
                 if not re.search(r"\d", raw):
                     continue  # decorative token (e.g. emoji), not a phone attempt
                 cleaned = clean_phone(raw)
