@@ -153,7 +153,7 @@ def make_api_request(
         return None, {"errors": [str(e.reason)]}
 
 
-def ensure_custom_fields(api_key: str) -> dict:
+def ensure_custom_fields(api_key: str, dry_run: bool = False) -> dict:
     """Ensure the 'custom.Company Founded' (date) and 'custom.Company Revenue' (number)
     custom fields exist on leads in this Close org.
 
@@ -162,6 +162,9 @@ def ensure_custom_fields(api_key: str) -> dict:
 
     Returns a dict: { 'founded': 'cf_...', 'revenue': 'cf_...' }
     """
+    if dry_run:
+        print("  Would check for custom fields and create any that are missing.")
+        return {}
     # Fetch all existing lead custom fields for this org
     print("  Fetching existing custom fields from Close...")
     response, _ = make_api_request("GET", "/custom_field/lead/", api_key)
@@ -754,9 +757,9 @@ if __name__ == "__main__":
 
     # Step 1: custom fields
     print("\n[1/4] Checking custom fields...")
-    custom_fields: dict = ensure_custom_fields(args.api_key)
+    custom_fields: dict = ensure_custom_fields(args.api_key, dry_run=dry_run)
 
-    if len(custom_fields) < 2:
+    if not dry_run and len(custom_fields) < 2:
         print(
             "Error: could not create required custom fields. Check your API key and permissions."
         )
