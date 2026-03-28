@@ -784,7 +784,7 @@ if __name__ == "__main__":
     print("\n[2/4] Parsing CSV...")
     try:
         leads, skipped, invalid_values = parse_csv(args.csv, custom_fields)
-    except FileNotFoundError as e:
+    except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}")
         sys.exit(1)
 
