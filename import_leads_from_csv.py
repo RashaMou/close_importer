@@ -640,8 +640,8 @@ def filter_by_founded(
         name: lead
         for name, lead in leads.items()
         if lead["_founded"] is not None
-        and lead["_founded"] >= start
-        and lead["_founded"] <= end
+        and (start is None or lead["_founded"] >= start)
+        and (end is None or lead["_founded"] <= end)
     }
 
 
@@ -746,19 +746,26 @@ if __name__ == "__main__":
     start_date: datetime | None = None
     end_date: datetime | None = None
 
-    if args.start or args.end:
-        if not (args.start and args.end):
-            print("Error: --start and --end must both be provided together.")
-            sys.exit(1)
+    if args.start:
         start_date = clean_date(args.start)
+        if not start_date:
+            print("Error: invalid --start date format — use DD.MM.YYYY.")
+            sys.exit(1)
+
+    if args.end:
         end_date = clean_date(args.end)
-        if not start_date or not end_date:
-            print("Error: invalid date format — use DD.MM.YYYY.")
+        if not end_date:
+            print("Error: invalid --end date format — use DD.MM.YYYY.")
             sys.exit(1)
-        if start_date > end_date:
-            print("Error: --start must be before --end.")
-            sys.exit(1)
-        print(f"Founded-date filter: {args.start} → {args.end}")
+
+    if start_date and end_date and start_date > end_date:
+        print("Error: --start must be before --end.")
+        sys.exit(1)
+
+    if start_date or end_date:
+        start_str = args.start if start_date else "beginning"
+        end_str = args.end if end_date else "present"
+        print(f"Founded-date filter: {start_str} → {end_str}")
     else:
         print("No date filter applied — all leads will be included in the report.")
 
