@@ -226,6 +226,54 @@ def ensure_custom_fields(api_key: str, dry_run: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _merge_row_into_lead(
+    existing: dict,
+    contact: dict,
+    founded: datetime | None,
+    revenue: float | None,
+    state: str | None,
+    custom_fields: dict,
+) -> bool:
+    """Merge a parsed CSV row into an existing in-memory lead dict.
+    Contacts are matched by name; new ones are appended.
+    Lead-level fields (founded, revenue, state) are filled in only if currently missing.
+    Returns True if anything changed, False if the row was a complete duplicate."""
+    changed = False
+
+    if contact:
+        incoming_name = contact.get("name") or ""
+        matched = next(
+            (c for c in existing["contacts"] if (c.get("name") or "") == incoming_name),
+            None,
+        )
+        if matched:
+            changed = merge_contact(matched, contact) or changed
+        else:
+            existing["contacts"].append(contact)
+            changed = True
+
+    if not existing["_founded"] and founded:
+        existing["_founded"] = founded
+        if "founded" in custom_fields:
+            existing[f'custom.{custom_fields["founded"]}'] = founded.strftime(
+                "%Y-%m-%d"
+            )
+        changed = True
+
+    if existing["_revenue"] is None and revenue is not None:
+        existing["_revenue"] = revenue
+        if "revenue" in custom_fields:
+            existing[f'custom.{custom_fields["revenue"]}'] = revenue
+        changed = True
+
+    if not existing["_state"] and state:
+        existing["_state"] = state
+        existing["addresses"] = [{"label": "business", "state": state, "country": "US"}]
+        changed = True
+
+    return changed
+
+
 def parse_csv(
     filepath: str, custom_fields: dict
 ) -> tuple[dict, list[dict], list[dict]]:
@@ -337,50 +385,9 @@ def parse_csv(
             # If this company already has a lead entry, merge or discard.
             # Otherwise, create a new lead entry.
             if company in leads:
-                existing = leads[company]
-                changed = False
-
-                # --- Merge contact ---
-                # Match against an existing contact by name. If none matches, add as new.
-                if contact:
-                    incoming_name = contact.get("name") or ""
-                    matched = next(
-                        (
-                            c
-                            for c in existing["contacts"]
-                            if (c.get("name") or "") == incoming_name
-                        ),
-                        None,
-                    )
-                    if matched:
-                        changed = merge_contact(matched, contact) or changed
-                    else:
-                        existing["contacts"].append(contact)
-                        changed = True
-
-                # --- Merge lead-level fields (fill in only if currently missing) ---
-                if not existing["_founded"] and founded:
-                    existing["_founded"] = founded
-                    if "founded" in custom_fields:
-                        existing[f'custom.{custom_fields["founded"]}'] = (
-                            founded.strftime("%Y-%m-%d")
-                        )
-                    changed = True
-
-                if existing["_revenue"] is None and revenue is not None:
-                    existing["_revenue"] = revenue
-                    if "revenue" in custom_fields:
-                        existing[f'custom.{custom_fields["revenue"]}'] = revenue
-                    changed = True
-
-                if not existing["_state"] and state:
-                    existing["_state"] = state
-                    existing["addresses"] = [
-                        {"label": "business", "state": state, "country": "US"}
-                    ]
-                    changed = True
-
-                if not changed:
+                if not _merge_row_into_lead(
+                    leads[company], contact, founded, revenue, state, custom_fields
+                ):
                     skipped.append(
                         {
                             "row": f"Row {reader.line_num}",
